@@ -87,7 +87,7 @@ func genRandomTestCases(n int) []testCase {
 }
 
 func TestSingleThreadSetThenGet(t *testing.T) {
-	c := NewCache(time.Duration(10000000000), time.Duration(5000000000), N, func(key string, value interface{}) {})
+	c := NewCache(10*time.Second, 5*time.Second, N, func(key string, value interface{}) {})
 	for _, ca := range testCases {
 		err := c.Set(ca.key, ca.value)
 		if err != nil {
@@ -109,7 +109,7 @@ func TestSingleThreadSetThenGet(t *testing.T) {
 }
 
 func TestSingleThreadSetFailMaxSize(t *testing.T) {
-	c := NewCache(time.Duration(10000000000), time.Duration(5000000000), N/2, func(key string, value interface{}) {})
+	c := NewCache(10*time.Second, 5*time.Second, N/2, func(key string, value interface{}) {})
 	for _, ca := range testCases[:len(testCases)/2] {
 		err := c.Set(ca.key, ca.value)
 		if err != nil {
@@ -127,7 +127,7 @@ func TestSingleThreadSetFailMaxSize(t *testing.T) {
 }
 
 func TestSingleThreadAddthenGet(t *testing.T) {
-	c := NewCache(time.Duration(10000000000), time.Duration(5000000000), N, func(key string, value interface{}) {})
+	c := NewCache(10*time.Second, 5*time.Second, N, func(key string, value interface{}) {})
 	for _, ca := range testCases {
 		err := c.Add(ca.key, ca.value)
 		if err != nil {
@@ -149,7 +149,7 @@ func TestSingleThreadAddthenGet(t *testing.T) {
 }
 
 func TestSingleThreadAddFailMaxSize(t *testing.T) {
-	c := NewCache(time.Duration(10000000000), time.Duration(5000000000), N/2, func(key string, value interface{}) {})
+	c := NewCache(10*time.Second, 5*time.Second, N/2, func(key string, value interface{}) {})
 	for _, ca := range testCases[:len(testCases)/2] {
 		err := c.Add(ca.key, ca.value)
 		if err != nil {
@@ -169,7 +169,7 @@ func TestSingleThreadAddFailMaxSize(t *testing.T) {
 var wg sync.WaitGroup
 
 func BenchmarkMultiThreadSetGetAdd(b *testing.B) {
-	c := NewCache(time.Duration(10000000000), time.Duration(5000000000), N, func(key string, value interface{}) {})
+	c := NewCache(10*time.Second, 5*time.Second, N, func(key string, value interface{}) {})
 	b.ResetTimer()
 	for _, ca := range testCases {
 		c.Set(ca.key, ca.value)
@@ -201,7 +201,7 @@ func set(c *Cache) {
 }
 
 func BenchmarkMultiThreadSetGetAddGoCache(b *testing.B) {
-	c := cache.New(time.Duration(10000000000), time.Duration(5000000000))
+	c := cache.New(10*time.Second, 5*time.Second)
 	b.ResetTimer()
 	for _, ca := range testCases {
 		c.Set(ca.key, ca.value, 0)
@@ -229,5 +229,15 @@ func setGoCache(c *cache.Cache) {
 	defer wg.Done()
 	for _, ca := range testCases {
 		c.Set(ca.key, ca.value, 0)
+	}
+}
+
+func TestExpiration(t *testing.T) {
+	c := NewCache(500*time.Microsecond, 250*time.Microsecond, 1000, func(string, interface{}) {})
+	c.Add("123", "456")
+	<-time.After(1 * time.Second)
+	_, f := c.Get("123")
+	if f == nil {
+		t.Error("should fail")
 	}
 }
