@@ -168,24 +168,25 @@ func TestSingleThreadAddFailMaxSize(t *testing.T) {
 
 var wg sync.WaitGroup
 
-func BenchmarkMultiThreadSetGetAdd(b *testing.B) {
-	c := NewCache(10*time.Second, 5*time.Second, N, func(key string, value interface{}) {})
+func BenchmarkMultiThreadSetGetAddMy(b *testing.B) {
+	c := NewCache(10*time.Second, 5*time.Second, N, nil)
 	b.ResetTimer()
 	for _, ca := range testCases {
 		c.Set(ca.key, ca.value)
 	}
 	wg = sync.WaitGroup{}
-	for i := 0; i < 40; i++ {
+	for i := 0; i < 160; i++ {
+		wg.Add(1)
 		go get(c)
 	}
-	for i := 0; i < 40; i++ {
+	for i := 0; i < 80; i++ {
+		wg.Add(1)
 		go set(c)
 	}
 	wg.Wait()
 }
 
 func get(c *Cache) {
-	wg.Add(1)
 	defer wg.Done()
 	for _, ca := range testCases {
 		c.Get(ca.key)
@@ -193,7 +194,6 @@ func get(c *Cache) {
 }
 
 func set(c *Cache) {
-	wg.Add(1)
 	defer wg.Done()
 	for _, ca := range testCases {
 		c.Set(ca.key, ca.value)
@@ -207,17 +207,18 @@ func BenchmarkMultiThreadSetGetAddGoCache(b *testing.B) {
 		c.Set(ca.key, ca.value, 0)
 	}
 	wg = sync.WaitGroup{}
-	for i := 0; i < 40; i++ {
+	for i := 0; i < 160; i++ {
+		wg.Add(1)
 		go getGoCache(c)
 	}
-	for i := 0; i < 40; i++ {
+	for i := 0; i < 80; i++ {
+		wg.Add(1)
 		go setGoCache(c)
 	}
 	wg.Wait()
 }
 
 func getGoCache(c *cache.Cache) {
-	wg.Add(1)
 	defer wg.Done()
 	for _, ca := range testCases {
 		c.Get(ca.key)
@@ -225,7 +226,6 @@ func getGoCache(c *cache.Cache) {
 }
 
 func setGoCache(c *cache.Cache) {
-	wg.Add(1)
 	defer wg.Done()
 	for _, ca := range testCases {
 		c.Set(ca.key, ca.value, 0)
